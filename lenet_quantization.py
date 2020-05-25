@@ -149,7 +149,7 @@ for images, labels in test_loader:
     test = Variable(images.view(-1,1,28,28)).cuda()
     outputs = model(test, eval_flag = True)
     for k in feature_maps.keys():
-        tmp_max = feature_maps[k].max().cpu().data.numpy()
+        tmp_max = feature_maps[k].abs().max().cpu().data.numpy()
         if k in blob_data:
             if tmp_max>blob_data[k]:
                 blob_data[k] = tmp_max
