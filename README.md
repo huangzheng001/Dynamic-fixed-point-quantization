@@ -3,6 +3,6 @@ dynamic fixed point quantization method PyTorch version reffer to caffe Ristrett
 
 Lenet: 99.26% ==> Lenet_8bit：99.16%  
 
-BN layer is not considered temporarily  
+vgg_merge.py: merge conv layer and BN layer  
 
-VGG：93.34% ==> VGG_8bit: 91.17%  
+VGG：93.36% ==> VGG_8bit: 93.48%  
