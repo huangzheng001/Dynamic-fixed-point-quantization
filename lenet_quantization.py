@@ -118,6 +118,8 @@ class Net(nn.Module):
         return x
 model = Net().cuda()
 checkpoint = torch.load('lenet.pth.tar')
+for k,v in checkpoint['state_dict'].items():
+    print(k)
 model.load_state_dict(checkpoint['state_dict'])
 acc = test(model)
 
@@ -138,7 +140,7 @@ print(int_w)
 
 # 计算量化后的权重
 q_state_dict = {}
-bit_width = 16
+bit_width = 8
 for k,w in d.items():
     q_state_dict[k] = quantization(w, bit_width, bit_width-int_w[k])
 
@@ -149,7 +151,7 @@ for images, labels in test_loader:
     test = Variable(images.view(-1,1,28,28)).cuda()
     outputs = model(test, eval_flag = True)
     for k in feature_maps.keys():
-        tmp_max = feature_maps[k].abs().max().cpu().data.numpy()
+        tmp_max = feature_maps[k].max().cpu().data.numpy()
         if k in blob_data:
             if tmp_max>blob_data[k]:
                 blob_data[k] = tmp_max
@@ -161,7 +163,7 @@ for images, labels in test_loader:
 int_blob = {}
 for k,b in blob_data.items():
     # print(b)
-    int_blob[k] = np.ceil(np.log2(b))
+    int_blob[k] = np.ceil(np.log2(b)+1)
 
 model.load_state_dict(q_state_dict)
 model.eval()
@@ -177,6 +179,7 @@ for data, target in test_loader:
     correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
 test_loss /= len(test_loader.dataset)
+print('quantization weights: ')
 print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
     test_loss, correct, len(test_loader.dataset),
     100. * correct / len(test_loader.dataset)))
@@ -221,6 +224,7 @@ for data, target in test_loader:
     correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
 test_loss /= len(test_loader.dataset)
+print('quantization all: ')
 print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
     test_loss, correct, len(test_loader.dataset),
     100. * correct / len(test_loader.dataset)))
