@@ -1,7 +1,7 @@
 # Dynamic-fixed-point-quantization
 dynamic fixed point quantization method PyTorch version reffer to caffe Ristretto  
 
-Lenet on MNIST: 99.27% ==> Lenet_8bit：99.31%  
+Lenet on MNIST: 99.27% ==> Lenet_8bit：99.31%; Lenet_16bit：99.22%  
 
 VGG on CIFAR10：  
 
