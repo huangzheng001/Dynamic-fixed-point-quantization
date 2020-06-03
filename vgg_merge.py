@@ -522,13 +522,13 @@ print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
 
 optimizer = optim.SGD(model2.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
 best_prec1 = 0.
-epochs = 160 #200
+epochs = 40 #200
 print('bit width: ', bit_width)
 for epoch in range(0, epochs):
-    if epoch in [epochs*0.25, epochs*0.75]:
-    # if epoch in [epochs * 0.5, ]:
-        for param_group in optimizer.param_groups:
-            param_group['lr'] *= 0.1
+#     if epoch in [epochs*0.25, epochs*0.75]:
+#     # if epoch in [epochs * 0.5, ]:
+#         for param_group in optimizer.param_groups:
+#             param_group['lr'] *= 0.1
     # train
     model2.train()
     acu_loss = 0
