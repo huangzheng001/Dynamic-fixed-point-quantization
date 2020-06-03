@@ -387,7 +387,7 @@ for data, target in test_loader:
     correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
 test_loss /= len(test_loader.dataset)
-print('after quant weights:')
+print('quantization weights:')
 print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
     test_loss, correct, len(test_loader.dataset),
     100. * correct / len(test_loader.dataset)))
@@ -515,7 +515,7 @@ for data, target in test_loader:
     correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
 test_loss /= len(test_loader.dataset)
-print('after quant all: ')
+print('quantization all: ')
 print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
     test_loss, correct, len(test_loader.dataset),
     100. * correct / len(test_loader.dataset)))
