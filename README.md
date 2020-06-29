@@ -7,4 +7,4 @@ VGG on CIFAR10：
 
 vgg_merge.py： merge conv layer and BN layer, and do quantization  
 
-VGG：93.36% ==> VGG_8bit: 93.47%  
+VGG：93.36% ==> VGG_8bit: 93.22%  
