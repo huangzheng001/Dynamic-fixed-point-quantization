@@ -1,6 +1,6 @@
 # -------------------------------------------------------------
 # made by huangzheng
-# 2020/06/03
+# 2020/06/29
 # ------------------------------------------------------------
 import numpy as np
 import math
@@ -297,27 +297,29 @@ old_model.load_state_dict(state)
 # ============================================
 # extra and merge BN
 print('extra and merge BN')
-new_state = {}
-for name, m in old_model.named_modules():
-    if isinstance(m, nn.Conv2d):
-        w_conv = m.weight.data
-        b_onv = 0
-        conv_name = name
-    if isinstance(m, nn.BatchNorm2d):
-        bn_mean = m.running_mean
-        beta = m.weight.data.clone()
-        gamma = m.bias.data
-        var_sqrt = torch.sqrt(m.running_var + m.eps)
-        w_shape = w_conv.shape
-        tmp = (beta / var_sqrt).view((w_shape[0], 1, 1, 1))
-        tmp_w = w_conv * tmp
-        tmp_b = (b_onv - bn_mean) / var_sqrt * beta + gamma
-        new_state[conv_name+'.weight'] = tmp_w
-        new_state[conv_name+'.bias'] = tmp_b
-    if isinstance(m, nn.Linear):
-        new_state[name+'.weight'] = m.weight.data
-        new_state[name+'.bias'] = m.bias.data
+# new_state = {}
+# for name, m in old_model.named_modules():
+#     if isinstance(m, nn.Conv2d):
+#         w_conv = m.weight.data
+#         b_onv = 0
+#         conv_name = name
+#     if isinstance(m, nn.BatchNorm2d):
+#         bn_mean = m.running_mean
+#         beta = m.weight.data.clone()
+#         gamma = m.bias.data
+#         var_sqrt = torch.sqrt(m.running_var + m.eps)
+#         w_shape = w_conv.shape
+#         tmp = (beta / var_sqrt).view((w_shape[0], 1, 1, 1))
+#         tmp_w = w_conv * tmp
+#         tmp_b = (b_onv - bn_mean) / var_sqrt * beta + gamma
+#         new_state[conv_name+'.weight'] = tmp_w
+#         new_state[conv_name+'.bias'] = tmp_b
+#     if isinstance(m, nn.Linear):
+#         new_state[name+'.weight'] = m.weight.data
+#         new_state[name+'.bias'] = m.bias.data
 
+# torch.save({'state_dict':new_state}, 'vgg_merge.pth.tar')
+new_state = torch.load('vgg_merge.pth.tar')['state_dict']
 model.load_state_dict(new_state)
 model.cuda()
 print('before:')
@@ -338,8 +340,10 @@ for k, w in d.items():
 # 计算权重的位数
 int_w = {}
 for k, w in stored_w.items():
-    int_w[k] = int( np.ceil(np.log2(w[0].cpu())+1))
-# print(int_w)
+    print(np.log2(w[0].cpu()), np.ceil(np.log2(w[0].cpu())))
+    int_w[k] = int( np.ceil(np.log2(w[0].cpu())))
+print('-'*20)
+print(int_w)
 
 # 计算量化后的权重
 q_state_dict = {}
@@ -347,7 +351,7 @@ bit_width = 8
 activity_width = 8
 # bit_width = int(sys.argv[1])
 for k, w in d.items():
-    q_state_dict[k] = quantization(w.float(), bit_width, bit_width - int_w[k])
+    q_state_dict[k] = quantization(w.float(), bit_width, bit_width-1- int_w[k])
 
 
 # 计数据流中最大的数值
@@ -387,7 +391,7 @@ for data, target in test_loader:
     correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
 test_loss /= len(test_loader.dataset)
-print('quantization weights:')
+print('after quant weights:')
 print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
     test_loss, correct, len(test_loader.dataset),
     100. * correct / len(test_loader.dataset)))
@@ -433,41 +437,41 @@ class vgg_quantization(nn.Module):
     def forward(self, x, if_q=False):
         # x = self.feature(x)
         # if if_q:
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['input'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 -int_blob['input'])
         x = self.conv1(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv1'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv1'])
         x = self.conv2(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv2'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv2'])
         x = nn.MaxPool2d(kernel_size=2, stride=2)(x)
         #################################################
         x = self.conv3(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv3'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv3'])
         x = self.conv4(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv4'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv4'])
         x = nn.MaxPool2d(kernel_size=2, stride=2)(x)
         ####################################
         x = self.conv5(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv5'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv5'])
         x = self.conv6(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv6'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv6'])
         x = self.conv7(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv7'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv7'])
         x = nn.MaxPool2d(kernel_size=2, stride=2)(x)
         #########################################
         x = self.conv8(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv8'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv8'])
         x = self.conv9(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv9'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv9'])
         x = self.conv10(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv10'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv10'])
         x = nn.MaxPool2d(kernel_size=2, stride=2)(x)
         ############################################
         x = self.conv11(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv11'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv11'])
         x = self.conv12(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv12'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv12'])
         x = self.conv13(x)
-        x = quantization_F.apply(x, activity_width, activity_width - int_blob['conv13'])
+        x = quantization_F.apply(x, activity_width, activity_width -1 - int_blob['conv13'])
         x = nn.MaxPool2d(kernel_size=2, stride=2)(x)
         # else:
         #     x = self.conv1(x)
@@ -515,20 +519,20 @@ for data, target in test_loader:
     correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
 test_loss /= len(test_loader.dataset)
-print('quantization all: ')
+print('after quant all: ')
 print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
     test_loss, correct, len(test_loader.dataset),
     100. * correct / len(test_loader.dataset)))
 
-optimizer = optim.SGD(model2.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
+optimizer = optim.SGD(model2.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
 best_prec1 = 0.
-epochs = 40 #200
+epochs = 50
 print('bit width: ', bit_width)
 for epoch in range(0, epochs):
-#     if epoch in [epochs*0.25, epochs*0.75]:
-#     # if epoch in [epochs * 0.5, ]:
-#         for param_group in optimizer.param_groups:
-#             param_group['lr'] *= 0.1
+    # if epoch in [epochs*0.25, epochs*0.75]:
+    # # if epoch in [epochs * 0.5, ]:
+    #     for param_group in optimizer.param_groups:
+    #         param_group['lr'] *= 0.1
     # train
     model2.train()
     acu_loss = 0
@@ -550,7 +554,7 @@ for epoch in range(0, epochs):
         q_state_dict = {}
         # bit_width = 8
         for k, w in d.items():
-            q_state_dict[k] = quantization(w.float(), bit_width, bit_width - int_w[k])
+            q_state_dict[k] = quantization(w.float(), bit_width, bit_width -1 - int_w[k])
             # if len(w.shape) == 4 or 'classifier' in k:
             #     q_state_dict[k] = quantization(w.float(), bit_width, bit_width - int_w[k])
             # else:
@@ -573,5 +577,7 @@ for epoch in range(0, epochs):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
     best_prec1 = max(best_prec1, 100. * correct / len(test_loader.dataset))
-
+    torch.save({'state_dict':
+                    model2.state_dict()},
+               'vgg_quant.pth.tar', )
 print('bit width: {},  activity width: {} best: {}'.format(bit_width, activity_width, best_prec1))
